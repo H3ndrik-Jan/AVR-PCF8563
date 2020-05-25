@@ -10,41 +10,50 @@
 
 #include <avr/io.h>
 #include "PCF8563.h"
+//#include "PCF8563.c"
+#include "i2c_master.h"
 
 
 //PHYSICAL LAYER
 
 void TWI_Init()
 {
-	//About 100kHz for 1.6MHz clock
+	i2c_init();
+	/*//About 100kHz for 1.6MHz clock
 	TWBR = 0;										//Set bitrate factor to 0
-	TWSR &= ~((1<<TWPS1) | (1<<TWPS0));				//Set prescaler to 1
+	TWSR &= ~((1<<TWPS1) | (1<<TWPS0));				//Set prescaler to 1*/
 }
 
 void TWI_Start()
 {
-	TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWSTA);
-	while (!(TWCR & (1<<TWINT)));
+	i2c_start();
+	/*TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWSTA);
+	while (!(TWCR & (1<<TWINT)));*/
 }
 
 void TWI_Stop()
 {
-	TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWSTO);
-	while ((TWCR & (1<<TWSTO)));
+	i2c_stop();
+	/*TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWSTO);
+	while ((TWCR & (1<<TWSTO)));*/
 }
 
 uint8_t TWI_Read(uint8_t ack)
 {
-	TWCR = (1<<TWINT) | (1<<TWEN) | (((ack ? 1 : 0)<<TWEA));
+	uint8_t* byte = 0;
+	i2c_read_byte(byte, ack);
+	return *byte;
+	/*TWCR = (1<<TWINT) | (1<<TWEN) | (((ack ? 1 : 0)<<TWEA));
 	while (!(TWCR & (1<<TWINT)));
-	return TWDR;
+	return TWDR;*/
 }
 
 void TWI_Write(uint8_t byte)
 {
-	TWDR = byte;
+	i2c_send_byte(byte);
+	/*TWDR = byte;
 	TWCR = (1<<TWINT) | (1<<TWEN);
-	while (!(TWCR & (1<<TWINT)));
+	while (!(TWCR & (1<<TWINT)));*/
 }
 
 

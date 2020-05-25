@@ -1,6 +1,10 @@
 # AVR PCF8563; With ATtiny85 support #
 
-This is C library for communication between PCF8563 and AVR uC. Written for Atmega88PA, but should work with other microprocessors without modifications (if it have hardware TWI/I2C interface).
+This is C library for communication between PCF8563 and AVR uC. ~~Written for Atmega88PA, but should work with other microprocessors without modifications (if it have hardware TWI/I2C interface).~~
+
+FORK: Added ATtiny85 support using @Caktus64K software_i2c firmware (https://github.com/Cactus64k/software_i2c)
+
+
 
 It's implement almost all PCF features:
 

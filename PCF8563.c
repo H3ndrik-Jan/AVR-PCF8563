@@ -12,14 +12,14 @@
 #include "PCF8563.h"
 
 
-#define I2C_PORT				PORTB
-#define I2C_PIN					PINB
-#define I2C_DDR					DDRB
-#define SDA						PB2
-#define SCL						PB1
+#define I2C_PORT			PORTB
+#define I2C_PIN				PINB
+#define I2C_DDR				DDRB
+#define SDA				PB2
+#define SCL				PB1
 
-#define I2C_SET_PIN_HIGH(pin)	{I2C_DDR	= I2C_DDR & ~_BV(pin);}
-#define I2C_SET_PIN_LOW(pin)	{I2C_DDR	= I2C_DDR | _BV(pin);}
+#define I2C_SET_PIN_HIGH(pin)		{I2C_DDR = I2C_DDR & ~_BV(pin);}
+#define I2C_SET_PIN_LOW(pin)		{I2C_DDR = I2C_DDR | _BV(pin);}
 #define I2C_SET_PIN_HZ(pin)		{I2C_SET_PIN_HIGH(pin)}
 
 #define I2C_PIN_STATE(pin)		(I2C_PIN & _BV(pin))

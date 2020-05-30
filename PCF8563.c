@@ -1,59 +1,94 @@
 /*
- * PCF8563.c
- *
- * Created: 2014-11-18 20:00:32
- *  Author: Jakub Pachciarek
- *
- * Not implemented:
- * - TEST1, STOP, TESTC, TI_TP bits - can be accessed trough raw PCF_Write and PCF_Read
- */ 
+* PCF8563.c
+*
+* Created: 2014-11-18 20:00:32
+*  Author: Jakub Pachciarek
+*
+* Not implemented:
+* - TEST1, STOP, TESTC, TI_TP bits - can be accessed trough raw PCF_Write and PCF_Read
+*/
 
 #include <avr/io.h>
 #include "PCF8563.h"
-//#include "PCF8563.c"
-#include "i2c_master.h"
 
 
-//PHYSICAL LAYER
+#define I2C_PORT				PORTB
+#define I2C_PIN					PINB
+#define I2C_DDR					DDRB
+#define SDA						PB2
+#define SCL						PB1
+
+#define I2C_SET_PIN_HIGH(pin)	{I2C_DDR	= I2C_DDR & ~_BV(pin);}
+#define I2C_SET_PIN_LOW(pin)	{I2C_DDR	= I2C_DDR | _BV(pin);}
+#define I2C_SET_PIN_HZ(pin)		{I2C_SET_PIN_HIGH(pin)}
+
+#define I2C_PIN_STATE(pin)		(I2C_PIN & _BV(pin))
 
 void TWI_Init()
 {
-	i2c_init();
-	/*//About 100kHz for 1.6MHz clock
-	TWBR = 0;										//Set bitrate factor to 0
-	TWSR &= ~((1<<TWPS1) | (1<<TWPS0));				//Set prescaler to 1*/
+	I2C_PORT	= I2C_PORT & ~_BV(SCL);
+	I2C_PORT	= I2C_PORT & ~_BV(SDA);
+
+	I2C_DDR		= I2C_DDR & ~_BV(SCL);
+	I2C_DDR		= I2C_DDR & ~_BV(SDA);
 }
 
 void TWI_Start()
 {
-	i2c_start();
-	/*TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWSTA);
-	while (!(TWCR & (1<<TWINT)));*/
+	I2C_SET_PIN_HIGH(SDA);
+	I2C_SET_PIN_HIGH(SCL);
+	I2C_SET_PIN_LOW(SDA);
+	I2C_SET_PIN_LOW(SCL);
 }
 
 void TWI_Stop()
 {
-	i2c_stop();
-	/*TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWSTO);
-	while ((TWCR & (1<<TWSTO)));*/
+	I2C_SET_PIN_LOW(SCL);
+	I2C_SET_PIN_LOW(SDA);
+	I2C_SET_PIN_HIGH(SCL);
+	I2C_SET_PIN_HIGH(SDA);
 }
 
 uint8_t TWI_Read(uint8_t ack)
 {
-	uint8_t* byte = 0;
-	i2c_read_byte(byte, ack);
-	return *byte;
-	/*TWCR = (1<<TWINT) | (1<<TWEN) | (((ack ? 1 : 0)<<TWEA));
-	while (!(TWCR & (1<<TWINT)));
-	return TWDR;*/
+	unsigned char inBits, byte;
+	
+	byte = 0x00;
+	I2C_SET_PIN_HZ(SDA);
+	for(inBits = 0; inBits<8; inBits++){
+		byte <<= 1;
+		I2C_SET_PIN_HIGH(SCL);
+		byte |= I2C_PIN_STATE(SDA);
+		I2C_SET_PIN_LOW(SCL);
+	}
+	
+	if(ack){
+		I2C_SET_PIN_LOW(SDA);
+		I2C_SET_PIN_HIGH(SCL);
+		I2C_SET_PIN_LOW(SCL);	//clock pulse for ack
+	}
+	return byte;
 }
 
 void TWI_Write(uint8_t byte)
 {
-	i2c_send_byte(byte);
-	/*TWDR = byte;
-	TWCR = (1<<TWINT) | (1<<TWEN);
-	while (!(TWCR & (1<<TWINT)));*/
+	unsigned char outBits;
+
+	for(outBits = 0; outBits<8; outBits++){
+		if(byte & 0x80){
+		I2C_SET_PIN_HIGH(SDA);}
+		else{
+		I2C_SET_PIN_LOW(SDA);}
+		byte <<= 1;
+		I2C_SET_PIN_HIGH(SCL);
+		I2C_SET_PIN_LOW(SCL);
+	}
+	
+	I2C_SET_PIN_HIGH(SCL);
+	I2C_SET_PIN_HZ(SDA);
+	while(!I2C_PIN_STATE(SCL));
+
+	I2C_SET_PIN_LOW(SCL);
 }
 
 
@@ -71,9 +106,8 @@ void PCF_Write(uint8_t addr, uint8_t *data, uint8_t count) {
 		TWI_Write(*data);
 		data++;
 	}
-
+	
 	TWI_Stop();
-
 }
 
 void PCF_Read(uint8_t addr, uint8_t *data, uint8_t count) {
@@ -96,7 +130,6 @@ void PCF_Read(uint8_t addr, uint8_t *data, uint8_t count) {
 	}
 
 	TWI_Stop();
-
 }
 
 
@@ -233,7 +266,7 @@ uint8_t PCF_GetDateTime(PCF_DateTime *dateTime)
 		dateTime->year += 100;
 	}
 
-	if (buffer[0] & 0x80) //Clock integrity not guaranted
+	if (buffer[0] & 0x80) //Clock integrity not guaranteed
 	{
 		return 1;
 	}
